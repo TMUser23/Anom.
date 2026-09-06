@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anom</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #16181c;
+            --accent: #1d9bf0;
+            --accent-hover: #1a8cd8;
+            --text: #e7e9ea;
+            --text-dim: #71767b;
+            --danger: #f4212e;
+            --success: #00ba7c;
+            --premium-gold: #ffd700;
+            --modal-bg: rgba(91, 112, 131, 0.4);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            min-height: 100vh;
+            border-left: 1px solid #2f3336;
+            border-right: 1px solid #2f3336;
+            padding-bottom: 80px;
+        }
+
+        .header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #2f3336;
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 16px;
+            margin: 15px;
+            border: 1px solid #2f3336;
+        }
+
+        input, textarea, select, button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background-color: #000;
+            color: #fff;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        button {
+            background-color: var(--accent);
+            color: #fff;
+            font-weight: bold;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .btn-secondary { background-color: #2f3336; color: #fff; }
+        .btn-secondary:hover { background-color: #3e4144; }
+        .btn-premium { background: linear-gradient(45deg, #ffd700, #ffa500); color: #000; }
+        .btn-success { background-color: var(--success); color: #fff; }
+        .btn-danger { background-color: var(--danger); color: #fff; }
+
+        .hidden { display: none !important; }
+
+        /* Твиты */
+        .tweet-card {
+            padding: 16px;
+            border-bottom: 1px solid #2f3336;
+            display: flex;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--text-dim);
+            flex-shrink: 0;
+        }
+
+        .tweet-content { flex: 1; }
+        .tweet-header { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+        .author-name { font-weight: bold; color: var(--text); }
+        .author-tag { color: var(--text-dim); }
+        .tweet-text { margin: 8px 0; line-height: 1.4; word-break: break-word; }
+        .tweet-media { max-width: 100%; border-radius: 16px; margin-top: 10px; border: 1px solid #2f3336; }
+
+        .premium-badge {
+            background: var(--premium-gold);
+            color: #000;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        /* Модальные окна */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--modal-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-body {
+            background: #000;
+            padding: 24px;
+            border-radius: 16px;
+            max-width: 450px;
+            width: 90%;
+            border: 1px solid #2f3336;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .nav-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+        .nav-tabs button { width: auto; padding: 6px 12px; font-size: 12px; }
+
+        .request-item {
+            background: #16181c;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #2f3336;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        /* Виджет Доната */
+        .donate-fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #16181c;
+            border: 2px solid var(--premium-gold);
+            border-radius: 50px;
+            padding: 10px 18px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            z-index: 999;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .status-loader {
+            padding: 12px;
+            background: #16181c;
+            border-radius: 8px;
+            border: 1px solid var(--accent);
+            margin: 10px 16px;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .rules-box {
+            background: #16181c;
+            border: 1px solid #333;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Экран Входа / Регистрации -->
+    <div id="auth-screen">
+        <div class="card" id="register-box">
+            <h2 style="color: var(--accent);">Регистрация в Anom.</h2>
+            <form id="register-form">
+                <input type="text" id="reg-name" placeholder="Имя пользователя" required>
+                <input type="password" id="reg-pass" placeholder="Пароль" required>
+                <button type="submit">Зарегистрироваться</button>
+                <button type="button" class="btn-secondary" onclick="toggleAuth('login')">Уже есть аккаунт? Войти</button>
+            </form>
+        </div>
+
+        <div class="card hidden" id="login-box">
+            <h2 style="color: var(--accent);">Войти в Anom.</h2>
+            <form id="login-form">
+                <input type="text" id="login-name" placeholder="Имя пользователя" required>
+                <input type="password" id="login-pass" placeholder="Пароль" required>
+                <button type="submit">Войти</button>
+                <button type="button" class="btn-secondary" onclick="toggleAuth('register')">Создать аккаунт</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Основное приложение -->
+    <div id="app-screen" class="hidden">
+        <header class="header">
+            <div class="logo">Anom.</div>
+            <div class="nav-tabs">
+                <button id="tab-feed-btn" class="btn-secondary" onclick="switchTab('feed')">Лента</button>
+                <button class="btn-secondary" onclick="openSettingsModal()">Настройки</button>
+                <button id="tab-admin-btn" class="btn-secondary hidden" onclick="switchTab('admin')" style="color: var(--danger);">Админка</button>
+                <button onclick="logout()" class="btn-secondary">Выйти</button>
+            </div>
+        </header>
+
+        <!-- Профиль статус -->
+        <div style="padding: 12px 16px; border-bottom: 1px solid #2f3336; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+                Вы зашли как: <strong id="user-display-name"></strong> 
+                <span id="user-premium-badge"></span>
+            </div>
+            <button onclick="openPremiumModal()" class="btn-premium" style="width: auto; padding: 6px 12px; margin: 0;">Premium 👑</button>
+        </div>
+
+        <!-- Личные Уведомления -->
+        <div id="user-notifications-box" style="padding: 0 16px;"></div>
+
+        <!-- Статус ожидания заявок -->
+        <div id="pending-status-box" class="hidden"></div>
+
+        <!-- Лента твитов -->
+        <div id="tab-feed">
+            <div style="padding: 16px; border-bottom: 1px solid #2f3336;">
+                <form id="create-tweet-form">
+                    <textarea id="tweet-text" placeholder="Что происходит?!" rows="3" maxlength="280" required></textarea>
+                    
+                    <div style="margin: 8px 0;">
+                        <label style="font-size: 12px; color: var(--text-dim); display: block;">Прикрепить фото:</label>
+                        <input type="file" id="tweet-img-input" accept="image/*" disabled>
+                    </div>
+
+                    <button type="submit" style="width: auto; float: right; padding: 8px 20px;">Опубликовать</button>
+                    <div style="clear: both;"></div>
+                </form>
+            </div>
+
+            <!-- Список твитов -->
+            <div id="tweets-container"></div>
+        </div>
+
+        <!-- Панель администратора -->
+        <div id="tab-admin" class="hidden" style="padding: 16px;">
+            <h3 style="color: var(--premium-gold);">Заявки на Премиум 👑</h3>
+            <div id="admin-premium-requests"></div>
+
+            <hr style="border-color:#333; margin:20px 0;">
+
+            <h3 style="color: var(--accent);">Заявки на Донат 🍕</h3>
+            <div id="admin-donate-requests"></div>
+
+            <hr style="border-color:#333; margin:20px 0;">
+
+            <h3 style="color: var(--danger);">Все пользователи</h3>
+            <div id="admin-users-list"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Виджет Доната -->
+<div class="donate-fab" onclick="openDonateModal()">
+    🍕 Поддержать автора
+</div>
+
+<!-- Модальное окно Настроек Аккаунта -->
+<div id="modal-settings" class="modal-overlay hidden">
+    <div class="modal-body">
+        <h3>Настройки аккаунта</h3>
+        <form id="settings-form">
+            <label style="font-size:12px; color:var(--text-dim);">Новое имя пользователя:</label>
+            <input type="text" id="set-name" required>
+            
+            <label style="font-size:12px; color:var(--text-dim);">Новый пароль:</label>
+            <input type="password" id="set-pass" required>
+
+            <button type="submit" style="margin-top:10px;">Сохранить изменения</button>
+            <button type="button" class="btn-secondary" onclick="closeModal('modal-settings')">Отмена</button>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно Премиум -->
+<div id="modal-premium" class="modal-overlay hidden">
+    <div class="modal-body">
+        <h3 style="color: var(--premium-gold); margin-top: 0;">Anom Premium 👑</h3>
+        <p style="font-size: 13px; color: var(--text-dim);">Выберите период и переведите USDT на кошелек:</p>
+        
+        <select id="premium-plan-select" onchange="updatePremiumPrice()">
+            <option value="week">1 Неделя — 80 USDT</option>
+            <option value="month">1 Месяц — 160 USDT</option>
+            <option value="year">1 Год — 200 USDT</option>
+        </select>
+
+        <div style="background:#16181c; padding:12px; border-radius:8px; margin:12px 0; border:1px solid #333;">
+            <p style="margin:0 0 5px 0; font-size:13px;">К оплате: <strong id="prem-price-display" style="color:var(--premium-gold); font-size:16px;">80 USDT</strong></p>
+            <p style="font-size:11px; color:var(--text-dim); margin:0 0 5px 0;">Реквизиты (USDT BEP-20):</p>
+            <code style="font-size:11px; color:var(--accent); word-break:break-all; background:#000; padding:6px; border-radius:4px; display:block;">0xec474397b318e2f55aeda99f876ab8199786b71a</code>
+        </div>
+
+        <button class="btn-premium" onclick="submitPremiumRequest()">Я оплатил Premium</button>
+        
+        <div class="rules-box">
+            <strong>Права и конфиденциальность:</strong><br>
+            Запрещено злоупотреблять возможностями Premium (включая деанонимизацию, оскорбления и спам). В случае нарушений администрация оставляет за собой право отменить ваш Premium без возврата средств.
+        </div>
+
+        <button class="btn-secondary" onclick="closeModal('modal-premium')" style="margin-top:8px;">Закрыть</button>
+    </div>
+</div>
+
+<!-- Модалка Доната -->
+<div id="modal-donate" class="modal-overlay hidden">
+    <div class="modal-body">
+        <h3>Поддержать автора 🍕</h3>
+        <p style="font-size:13px; color:var(--text-dim);">Введите сумму доната (в USDT), которую хотите перевести:</p>
+        <input type="number" id="donate-amount" placeholder="Сумма доната в USDT" min="1" value="5">
+        <div style="background:#16181c; padding:10px; border-radius:8px; margin:10px 0; border: 1px solid #333;">
+            <p style="font-size:12px; margin:0 0 5px 0; color:var(--accent);">Реквизиты (USDT BEP-20):</p>
+            <code style="font-size:11px; word-break:break-all;">0xec474397b318e2f55aeda99f876ab8199786b71a</code>
+        </div>
+        <button onclick="submitDonateRequest()">Я перевел донат ❤️</button>
+        <button class="btn-secondary" onclick="closeModal('modal-donate')" style="margin-top:5px;">Закрыть</button>
+    </div>
+</div>
+
+<script>
+    const MY_WALLET = "0xec474397b318e2f55aeda99f876ab8199786b71a";
+    const ADMIN_ACCOUNT = { name: "admin", pass: "admin123", premiumUntil: 9999999999999 };
+
+    let users = JSON.parse(localStorage.getItem('tw_users')) || [];
+    let currentUser = JSON.parse(localStorage.getItem('tw_user')) || null;
+    let tweets = JSON.parse(localStorage.getItem('tw_tweets')) || [];
+
+    let premiumRequests = JSON.parse(localStorage.getItem('tw_premium_requests')) || [];
+    let donateRequests = JSON.parse(localStorage.getItem('tw_donate_requests')) || [];
+    let userNotifications = JSON.parse(localStorage.getItem('tw_user_notifications')) || {};
+
+    // Создаем админа по умолчанию
+    if (!users.some(u => u.name.toLowerCase() === ADMIN_ACCOUNT.name)) {
+        users.push(ADMIN_ACCOUNT);
+        localStorage.setItem('tw_users', JSON.stringify(users));
+    }
+
+    window.onload = function() {
+        if (currentUser) showApp();
+        else toggleAuth('register');
+    };
+
+    function toggleAuth(type) {
+        document.getElementById('register-box').classList.toggle('hidden', type !== 'register');
+        document.getElementById('login-box').classList.toggle('hidden', type !== 'login');
+    }
+
+    function showScreen(id) {
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('app-screen').classList.add('hidden');
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    // Регистрация
+    document.getElementById('register-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const name = document.getElementById('reg-name').value.trim();
+        const pass = document.getElementById('reg-pass').value.trim();
+
+        if (users.some(u => u.name.toLowerCase() === name.toLowerCase())) {
+            alert('Пользователь с таким именем уже существует!');
+            return;
+        }
+
+        currentUser = { name: name, pass: pass, premiumUntil: 0 };
+        users.push(currentUser);
+        saveState();
+        showApp();
+    });
+
+    // Вход
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const name = document.getElementById('login-name').value.trim();
+        const pass = document.getElementById('login-pass').value.trim();
+
+        const user = users.find(u => u.name.toLowerCase() === name.toLowerCase());
+
+        if (user && user.pass === pass) {
+            currentUser = user;
+            saveState();
+            showApp();
+        } else {
+            alert('Неверный логин или пароль!');
+        }
+    });
+
+    function isUserPremium(user) {
+        if (!user) return false;
+        if (user.name.toLowerCase() === ADMIN_ACCOUNT.name) return true;
+        return user.premiumUntil && user.premiumUntil > Date.now();
+    }
+
+    function showApp() {
+        showScreen('app-screen');
+        document.getElementById('user-display-name').textContent = `@${currentUser.name}`;
+
+        const isPrem = isUserPremium(currentUser);
+        document.getElementById('user-premium-badge').innerHTML = isPrem ? '<span class="premium-badge">👑 PREMIUM</span>' : '';
+
+        // Настройки Premium функций
+        document.getElementById('tweet-img-input').disabled = !isPrem;
+
+        // Показ админки
+        if (currentUser.name.toLowerCase() === ADMIN_ACCOUNT.name) {
+            document.getElementById('tab-admin-btn').classList.remove('hidden');
+        } else {
+            document.getElementById('tab-admin-btn').classList.add('hidden');
+        }
+
+        checkPendingRequests();
+        checkNotifications();
+        renderTweets();
+    }
+
+    // Изменение данных аккаунта
+    function openSettingsModal() {
+        document.getElementById('set-name').value = currentUser.name;
+        document.getElementById('set-pass').value = currentUser.pass;
+        document.getElementById('modal-settings').classList.remove('hidden');
+    }
+
+    document.getElementById('settings-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const newName = document.getElementById('set-name').value.trim();
+        const newPass = document.getElementById('set-pass').value.trim();
+
+        if (newName.toLowerCase() !== currentUser.name.toLowerCase() && users.some(u => u.name.toLowerCase() === newName.toLowerCase())) {
+            alert('Имя уже занято!');
+            return;
+        }
+
+        // Обновляем в твитах имя пользователя
+        tweets.forEach(t => {
+            if (t.realAuthor === currentUser.name) t.realAuthor = newName;
+        });
+
+        currentUser.name = newName;
+        currentUser.pass = newPass;
+
+        const uIdx = users.findIndex(u => u.name.toLowerCase() === currentUser.name.toLowerCase());
+        if (uIdx !== -1) users[uIdx] = currentUser;
+
+        saveState();
+        closeModal('modal-settings');
+        showApp();
+        alert('Данные аккаунта успешно обновлены!');
+    });
+
+    function logout() {
+        localStorage.removeItem('tw_user');
+        currentUser = null;
+        showScreen('auth-screen');
+    }
+
+    function saveState() {
+        localStorage.setItem('tw_users', JSON.stringify(users));
+        localStorage.setItem('tw_user', JSON.stringify(currentUser));
+        localStorage.setItem('tw_tweets', JSON.stringify(tweets));
+    }
+
+    // Подача заявки на Премиум
+    function openPremiumModal() { document.getElementById('modal-premium').classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function updatePremiumPrice() {
+        const plan = document.getElementById('premium-plan-select').value;
+        let price = "80 USDT";
+        if (plan === 'month') price = "160 USDT";
+        if (plan === 'year') price = "200 USDT";
+        document.getElementById('prem-price-display').textContent = price;
+    }
+
+    function submitPremiumRequest() {
+        const plan = document.getElementById('premium-plan-select').value;
+        const price = document.getElementById('prem-price-display').textContent;
+
+        const req = {
+            id: Date.now(),
+            userName: currentUser.name,
+            plan: plan,
+            price: price,
+            type: 'premium'
+        };
+
+        premiumRequests.push(req);
+        localStorage.setItem('tw_premium_requests', JSON.stringify(premiumRequests));
+
+        closeModal('modal-premium');
+        checkPendingRequests();
+    }
+
+    // Подача заявки на Донат
+    function openDonateModal() { document.getElementById('modal-donate').classList.remove('hidden'); }
+
+    function submitDonateRequest() {
+        const amount = document.getElementById('donate-amount').value;
+        if (!amount || amount <= 0) return alert('Введите сумму!');
+
+        const req = {
+            id: Date.now(),
+            userName: currentUser.name,
+            amount: amount + " USDT",
+            type: 'donate'
+        };
+
+        donateRequests.push(req);
+        localStorage.setItem('tw_donate_requests', JSON.stringify(donateRequests));
+
+        closeModal('modal-donate');
+        checkPendingRequests();
+    }
+
+    // Проверка статусов ожидания
+    function checkPendingRequests() {
+        const pendingBox = document.getElementById('pending-status-box');
+        pendingBox.innerHTML = '';
+
+        const userPremReq = premiumRequests.find(r => r.userName.toLowerCase() === currentUser.name.toLowerCase());
+        const userDonReq = donateRequests.find(r => r.userName.toLowerCase() === currentUser.name.toLowerCase());
+
+        if (userPremReq || userDonReq) {
+            pendingBox.classList.remove('hidden');
+            if (userPremReq) {
+                pendingBox.innerHTML += `
+                    <div class="status-loader">
+                        ⏳ <strong>Администратор проверяет вашу заявку на Premium...</strong>
+                    </div>`;
+            }
+            if (userDonReq) {
+                pendingBox.innerHTML += `
+                    <div class="status-loader">
+                        🍕 <strong>Администратор проверяет получение доната...</strong>
+                    </div>`;
+            }
+        } else {
+            pendingBox.classList.add('hidden');
+        }
+    }
+
+    // Проверка уведомлений
+    function checkNotifications() {
+        const notifBox = document.getElementById('user-notifications-box');
+        notifBox.innerHTML = '';
+
+        const list = userNotifications[currentUser.name.toLowerCase()] || [];
+        if (list.length > 0) {
+            list.forEach((msg, index) => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.style.borderColor = 'var(--accent)';
+                div.style.margin = '10px 0';
+                div.style.padding = '12px';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span>${msg}</span>
+                        <button onclick="dismissNotification(${index})" style="width:auto; padding:4px 10px; font-size:11px;" class="btn-secondary">OK</button>
+                    </div>
+                `;
+                notifBox.appendChild(div);
+            });
+        }
+    }
+
+    function dismissNotification(index) {
+        const key = currentUser.name.toLowerCase();
+        if (userNotifications[key]) {
+            userNotifications[key].splice(index, 1);
+            localStorage.setItem('tw_user_notifications', JSON.stringify(userNotifications));
+            checkNotifications();
+        }
+    }
+
+    function addNotification(userName, message) {
+        const key = userName.toLowerCase();
+        if (!userNotifications[key]) userNotifications[key] = [];
+        userNotifications[key].push(message);
+        localStorage.setItem('tw_user_notifications', JSON.stringify(userNotifications));
+    }
+
+    // Переключение вкладок
+    function switchTab(tab) {
+        document.getElementById('tab-feed').classList.toggle('hidden', tab !== 'feed');
+        document.getElementById('tab-admin').classList.toggle('hidden', tab !== 'admin');
+
+        if (tab === 'admin') renderAdminRequests();
+    }
+
+    // Отрисовка Админки
+    function renderAdminRequests() {
+        // Премиум заявки
+        const premContainer = document.getElementById('admin-premium-requests');
+        premContainer.innerHTML = '';
+        if (premiumRequests.length === 0) premContainer.innerHTML = '<p style="color:var(--text-dim); font-size:13px;">Заявок нет</p>';
+
+        premiumRequests.forEach((req, idx) => {
+            const div = document.createElement('div');
+            div.className = 'request-item';
+            div.innerHTML = `
+                <div><strong>Пользователь:</strong> @${req.userName}</div>
+                <div><strong>Тариф:</strong> ${req.plan} (${req.price})</div>
+                <div style="display:flex; gap:10px; margin-top:8px;">
+                    <button class="btn-success" onclick="handlePremiumRequest(${idx}, true)">Принять</button>
+                    <button class="btn-danger" onclick="handlePremiumRequest(${idx}, false)">Отказать</button>
+                </div>
+            `;
+            premContainer.appendChild(div);
+        });
+
+        // Донат заявки
+        const donContainer = document.getElementById('admin-donate-requests');
+        donContainer.innerHTML = '';
+        if (donateRequests.length === 0) donContainer.innerHTML = '<p style="color:var(--text-dim); font-size:13px;">Заявок нет</p>';
+
+        donateRequests.forEach((req, idx) => {
+            const div = document.createElement('div');
+            div.className = 'request-item';
+            div.innerHTML = `
+                <div><strong>Пользователь:</strong> @${req.userName}</div>
+                <div><strong>Сумма:</strong> ${req.amount}</div>
+                <div style="display:flex; gap:10px; margin-top:8px;">
+                    <button class="btn-success" onclick="handleDonateRequest(${idx}, true)">Поблагодарить</button>
+                    <button class="btn-danger" onclick="handleDonateRequest(${idx}, false)">Отказать</button>
+                </div>
+            `;
+            donContainer.appendChild(div);
+        });
+
+        // Все пользователи
+        const list = document.getElementById('admin-users-list');
+        list.innerHTML = '';
+        users.forEach(u => {
+            if (u.name === ADMIN_ACCOUNT.name) return;
+
+            const isPrem = isUserPremium(u);
+            const div = document.createElement('div');
+            div.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom: 1px solid #333;";
+            div.innerHTML = `
+                <span><strong>@${u.name}</strong> ${isPrem ? '👑' : ''}</span>
+                <button class="btn-secondary" style="width:auto; padding:6px 12px; font-size:12px;" onclick="toggleUserPremium('${u.name}')">
+                    ${isPrem ? 'Забрать Premium' : 'Выдать Premium'}
+                </button>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    // Обработка Premium Заявок
+    function handlePremiumRequest(idx, isAccepted) {
+        const req = premiumRequests[idx];
+        if (!req) return;
+
+        if (isAccepted) {
+            let addMs = 7 * 24 * 3600 * 1000;
+            if (req.plan === 'month') addMs = 30 * 24 * 3600 * 1000;
+            if (req.plan === 'year') addMs = 365 * 24 * 3600 * 1000;
+
+            const targetUser = users.find(u => u.name.toLowerCase() === req.userName.toLowerCase());
+            if (targetUser) {
+                const now = Date.now();
+                const currentExpire = (targetUser.premiumUntil && targetUser.premiumUntil > now) ? targetUser.premiumUntil : now;
+                targetUser.premiumUntil = currentExpire + addMs;
+                saveState();
+
+                if (currentUser.name.toLowerCase() === targetUser.name.toLowerCase()) {
+                    currentUser = targetUser;
+                    saveState();
+                }
+            }
+
+            addNotification(req.userName, "🎉 <strong>Оплата прошла!</strong> Теперь вы имеете право на премиум 👑.");
+        } else {
+            addNotification(req.userName, "❌ <strong>Оплата не прошла.</strong> Повторите попытку.");
+        }
+
+        premiumRequests.splice(idx, 1);
+        localStorage.setItem('tw_premium_requests', JSON.stringify(premiumRequests));
+        renderAdminRequests();
+        showApp();
+    }
+
+    // Обработка Донат Заявок
+    function handleDonateRequest(idx, isAccepted) {
+        const req = donateRequests[idx];
+        if (!req) return;
+
+        if (isAccepted) {
+            addNotification(req.userName, "🍕❤️ <strong>Оплата прошла, спасибо вам большое!</strong>");
+        } else {
+            addNotification(req.userName, "❌ <strong>Оплата не прошла.</strong> Повторите попытку.");
+        }
+
+        donateRequests.splice(idx, 1);
+        localStorage.setItem('tw_donate_requests', JSON.stringify(donateRequests));
+        renderAdminRequests();
+        showApp();
+    }
+
+    function toggleUserPremium(username) {
+        const u = users.find(usr => usr.name === username);
+        if (u) {
+            u.premiumUntil = isUserPremium(u) ? 0 : Date.now() + 30*24*3600*1000;
+            saveState();
+            renderAdminRequests();
+            if (currentUser.name === u.name) {
+                currentUser = u;
+                showApp();
+            }
+        }
+    }
+
+    // Публикация Твита
+    document.getElementById('create-tweet-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const text = document.getElementById('tweet-text').value;
+        const imgInput = document.getElementById('tweet-img-input');
+        const isPrem = isUserPremium(currentUser);
+
+        const saveTweet = (imgData) => {
+            const newTweet = {
+                id: Date.now(),
+                realAuthor: currentUser.name,
+                text: text,
+                image: imgData || null,
+                likes: [],
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+
+            tweets.unshift(newTweet);
+            saveState();
+            document.getElementById('create-tweet-form').reset();
+            renderTweets();
+        };
+
+        if (imgInput.files && imgInput.files[0] && isPrem) {
+            const reader = new FileReader();
+            reader.onload = function(evt) { saveTweet(evt.target.result); };
+            reader.readAsDataURL(imgInput.files[0]);
+        } else {
+            saveTweet(null);
+        }
+    });
+
+    // Отрисовка твитов
+    function renderTweets() {
+        const container = document.getElementById('tweets-container');
+        container.innerHTML = '';
+
+        const isViewerPremium = isUserPremium(currentUser);
+
+        tweets.forEach(t => {
+            const isLiked = t.likes.includes(currentUser.name);
+            
+            const displayName = isViewerPremium ? t.realAuthor : "Anonymous";
+            const displayTag = isViewerPremium ? `@${t.realAuthor}` : "@hidden";
+
+            const card = document.createElement('div');
+            card.className = 'tweet-card';
+
+            card.innerHTML = `
+                <div class="avatar">${displayName.charAt(0).toUpperCase()}</div>
+                <div class="tweet-content">
+                    <div class="tweet-header">
+                        <span class="author-name">${displayName}</span>
+                        <span class="author-tag">${displayTag}</span>
+                        <span class="author-tag">• ${t.time}</span>
+                    </div>
+                    <div class="tweet-text">${t.text}</div>
+                    ${t.image ? `<img src="${t.image}" class="tweet-media">` : ''}
+                    <div style="margin-top: 10px;">
+                        <button class="btn-secondary" style="width: auto; padding: 4px 12px; font-size: 12px;" onclick="toggleLike(${t.id})">
+                            ${isLiked ? '❤️' : '🤍'} ${t.likes.length}
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function toggleLike(tweetId) {
+        const tweet = tweets.find(t => t.id === tweetId);
+        if (!tweet) return;
+
+        const idx = tweet.likes.indexOf(currentUser.name);
+        if (idx === -1) tweet.likes.push(currentUser.name);
+        else tweet.likes.splice(idx, 1);
+
+        saveState();
+        renderTweets();
+    }
+</script>
+</body>
+</html>
