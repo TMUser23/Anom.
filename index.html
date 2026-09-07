@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anom.</title>
+    <title>Anom — Анонимная сеть</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
         body { background-color: #15202b; color: #fff; display: flex; justify-content: center; padding: 20px; }
@@ -31,6 +31,11 @@
         .ban-btn { color: #ff9900; }
         .admin-panel { background: #253341; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
         .admin-input { padding: 5px; border-radius: 4px; border: none; }
+
+        /* Всплывающие плашки-уведомления на странице */
+        .toast-msg { display: none; margin-top: 8px; font-size: 13px; font-weight: bold; padding: 6px; border-radius: 4px; }
+        .toast-error { background: #f4212e22; color: #f4212e; border: 1px solid #f4212e; }
+        .toast-success { background: #00ba7c22; color: #00ba7c; border: 1px solid #00ba7c; }
 
         /* Модальное окно доната */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100; }
@@ -77,20 +82,31 @@
 
         let isAdmin = false;
 
-        // Пароль админа по умолчанию
+        // Вспомогательная функция для отображения сообщений прямо на странице
+        function showMsg(elementId, text, type) {
+            const el = document.getElementById(elementId);
+            el.innerText = text;
+            el.className = `toast-msg toast-${type}`;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 4000);
+        }
+
+        // Проверка пароля админа без alert
         window.checkAdmin = function() {
             const pass = document.getElementById('admin-pass').value;
             if (pass === 'admin123') {
                 isAdmin = true;
-                alert('Вы вошли как admin!');
+                showMsg('admin-msg', 'Вы успешно вошли как admin!', 'success');
+                document.getElementById('admin-pass').style.display = 'none';
+                document.getElementById('admin-login-btn').style.display = 'none';
                 document.getElementById('admin-donations-panel').style.display = 'block';
                 listenToDonationsAdmin();
             } else {
-                alert('Неверный пароль');
+                showMsg('admin-msg', 'Неверный пароль!', 'error');
             }
         };
 
-        // Модальное окно доната
+        // Открытие/закрытие окна доната
         window.openDonateModal = function() {
             document.getElementById('donateModal').style.display = 'flex';
         };
@@ -99,7 +115,7 @@
             document.getElementById('donateModal').style.display = 'none';
         };
 
-        // Нажатие на "Я отправил донат"
+        // Подтверждение платежа пользователем
         window.confirmPayment = async function() {
             const statusBox = document.getElementById('payment-status');
             statusBox.style.display = 'block';
@@ -115,7 +131,7 @@
             listenToMyDonationStatus();
         };
 
-        // Отслеживание статуса доната для текущего пользователя
+        // Статус доната
         function listenToMyDonationStatus() {
             onSnapshot(doc(db, "donations", userId), (docSnap) => {
                 if (docSnap.exists()) {
@@ -137,7 +153,7 @@
             });
         }
 
-        // Панель донатов у админа
+        // Донаты в админке
         function listenToDonationsAdmin() {
             onSnapshot(collection(db, "donations"), (snapshot) => {
                 const list = document.getElementById('donations-list');
@@ -158,7 +174,7 @@
                     }
                 });
                 if (list.innerHTML === "") {
-                    list.innerHTML = "<small>Заявок на донат нет</small>";
+                    list.innerHTML = "<small style='color: #8899a6;'>Заявок на донат нет</small>";
                 }
             });
         }
@@ -169,11 +185,11 @@
             });
         };
 
-        // Отправка поста
+        // Публикация поста
         window.sendPost = async function() {
             const banCheck = await getDoc(doc(db, "banned", userId));
             if (banCheck.exists()) {
-                alert("Вы забанены и не можете публиковать посты!");
+                showMsg('post-msg', 'Вы забанены и не можете писать!', 'error');
                 return;
             }
 
@@ -182,7 +198,7 @@
             const file = fileInput.files[0];
 
             if (!text && !file) {
-                alert("Введите текст или выберите фото!");
+                showMsg('post-msg', 'Введите текст или добавьте фото!', 'error');
                 return;
             }
 
@@ -203,6 +219,7 @@
 
             document.getElementById('post-text').value = "";
             fileInput.value = "";
+            showMsg('post-msg', 'Пост опубликован!', 'success');
         };
 
         // Удаление поста
@@ -210,20 +227,18 @@
             if (isAdmin || authorId === userId) {
                 await deleteDoc(doc(db, "posts", postId));
             } else {
-                alert("Вы можете удалять только свои посты!");
+                showMsg('post-msg', 'Можно удалять только свои посты!', 'error');
             }
         };
 
         // Бан пользователя
         window.banUser = async function(targetUserId) {
             if (!isAdmin) return;
-            if (confirm("Забанить этого пользователя?")) {
-                await setDoc(doc(db, "banned", targetUserId), { banned: true });
-                alert("Пользователь забанен!");
-            }
+            await setDoc(doc(db, "banned", targetUserId), { banned: true });
+            showMsg('admin-msg', 'Пользователь забанен!', 'success');
         };
 
-        // Отрисовка постов
+        // Загрузка ленты
         const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
         onSnapshot(q, (snapshot) => {
             const postsContainer = document.getElementById('posts');
@@ -269,7 +284,8 @@
     <!-- Панель входа для админа -->
     <div class="admin-panel">
         <input type="password" id="admin-pass" class="admin-input" placeholder="Пароль админа">
-        <button onclick="checkAdmin()">Войти как Admin</button>
+        <button id="admin-login-btn" onclick="checkAdmin()">Войти как Admin</button>
+        <div id="admin-msg" class="toast-msg"></div>
         
         <div id="admin-donations-panel" style="display: none; margin-top: 15px; border-top: 1px solid #38444d; padding-top: 10px;">
             <h4>Проверка донатов:</h4>
@@ -286,6 +302,7 @@
             </label>
             <button class="send-btn" onclick="sendPost()">Опубликовать</button>
         </div>
+        <div id="post-msg" class="toast-msg"></div>
     </div>
 
     <!-- Лента постов -->
