@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anom.</title>
+    <title>Anom — Анонимная сеть</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
         body { background-color: #15202b; color: #fff; display: flex; justify-content: center; padding: 20px; }
         .container { width: 100%; max-width: 600px; }
         header { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #38444d; }
         h1 { color: #1da1f2; font-size: 24px; }
-        .pizza-btn { background: #ff9900; border: none; color: white; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; text-decoration: none; }
+        .pizza-btn { background: #ff9900; border: none; color: white; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; }
         
         .create-post { background: #192734; padding: 15px; border-radius: 10px; margin: 20px 0; }
         textarea { width: 100%; height: 80px; background: transparent; border: none; color: #fff; resize: none; outline: none; font-size: 16px; }
@@ -31,15 +31,31 @@
         .ban-btn { color: #ff9900; }
         .admin-panel { background: #253341; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
         .admin-input { padding: 5px; border-radius: 4px; border: none; }
+
+        /* Модальное окно доната */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100; }
+        .modal-content { background: #192734; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; position: relative; }
+        .close-btn { position: absolute; top: 10px; right: 15px; color: #aaa; font-size: 20px; cursor: pointer; }
+        .wallet-box { background: #15202b; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; word-break: break-all; margin: 15px 0; border: 1px solid #38444d; color: #ff9900; }
+        .status-box { margin-top: 15px; padding: 10px; border-radius: 6px; font-weight: bold; display: none; }
+        .status-pending { background: #ff990022; color: #ff9900; border: 1px solid #ff9900; }
+        .status-success { background: #00ba7c22; color: #00ba7c; border: 1px solid #00ba7c; }
+        .status-rejected { background: #f4212e22; color: #f4212e; border: 1px solid #f4212e; }
+
+        /* Панель донатов для админа */
+        .donations-list { margin-top: 10px; text-align: left; }
+        .donate-item { background: #15202b; padding: 8px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        .btn-approve { background: #00ba7c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+        .btn-reject { background: #f4212e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
     </style>
 
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, setDoc, getDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, setDoc, getDoc, onSnapshot, query, orderBy, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-        // НАСТРОЙКА FIREBASE (Вставьте свои ключи)
+        // НАСТРОЙКА FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyBXdw2C8rAEQESmrLZkuYKDJYhhwIe1yhQ",
             authDomain: "anom-a7aa3.firebaseapp.com",
@@ -53,7 +69,6 @@
         const db = getFirestore(app);
         const storage = getStorage(app);
 
-        // Генерируем или получаем уникальный ID устройства для бана/удаления своих постов
         let userId = localStorage.getItem('anom_user_id');
         if (!userId) {
             userId = 'user_' + Math.random().toString(36).substr(2, 9);
@@ -62,26 +77,100 @@
 
         let isAdmin = false;
 
-        // Пароль админа (для простоты)
+        // Пароль админа по умолчанию
         window.checkAdmin = function() {
             const pass = document.getElementById('admin-pass').value;
-            if (pass === 'admin123') { // Измените пароль на свой!
+            if (pass === 'admin123') {
                 isAdmin = true;
                 alert('Вы вошли как admin!');
-                renderPosts();
+                document.getElementById('admin-donations-panel').style.display = 'block';
+                listenToDonationsAdmin();
             } else {
                 alert('Неверный пароль');
             }
         };
 
-        // Поддержать (просто всплывашка)
-        window.supportDev = function() {
-            alert('Спасибо за поддержку разработчика! 🍕 (Эта кнопка ничего не списывает)');
+        // Модальное окно доната
+        window.openDonateModal = function() {
+            document.getElementById('donateModal').style.display = 'flex';
+        };
+
+        window.closeDonateModal = function() {
+            document.getElementById('donateModal').style.display = 'none';
+        };
+
+        // Нажатие на "Я отправил донат"
+        window.confirmPayment = async function() {
+            const statusBox = document.getElementById('payment-status');
+            statusBox.style.display = 'block';
+            statusBox.className = 'status-box status-pending';
+            statusBox.innerText = '🤖 Бот-админ проверяет ваш донат...';
+
+            await setDoc(doc(db, "donations", userId), {
+                userId: userId,
+                status: 'pending',
+                createdAt: new Date()
+            });
+
+            listenToMyDonationStatus();
+        };
+
+        // Отслеживание статуса доната для текущего пользователя
+        function listenToMyDonationStatus() {
+            onSnapshot(doc(db, "donations", userId), (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const statusBox = document.getElementById('payment-status');
+                    statusBox.style.display = 'block';
+
+                    if (data.status === 'pending') {
+                        statusBox.className = 'status-box status-pending';
+                        statusBox.innerText = '🤖 Бот-админ проверяет ваш донат...';
+                    } else if (data.status === 'approved') {
+                        statusBox.className = 'status-box status-success';
+                        statusBox.innerText = '✅ Оплата прошла успешно! Спасибо за поддержку! 🍕';
+                    } else if (data.status === 'rejected') {
+                        statusBox.className = 'status-box status-rejected';
+                        statusBox.innerText = '❌ Оплата не прошла. Повторите попытку.';
+                    }
+                }
+            });
+        }
+
+        // Панель донатов у админа
+        function listenToDonationsAdmin() {
+            onSnapshot(collection(db, "donations"), (snapshot) => {
+                const list = document.getElementById('donations-list');
+                list.innerHTML = "";
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    if (data.status === 'pending') {
+                        const item = document.createElement('div');
+                        item.className = 'donate-item';
+                        item.innerHTML = `
+                            <span>ID: ${data.userId}</span>
+                            <div>
+                                <button class="btn-approve" onclick="resolveDonation('${data.userId}', 'approved')">Подтвердить</button>
+                                <button class="btn-reject" onclick="resolveDonation('${data.userId}', 'rejected')">Отклонить</button>
+                            </div>
+                        `;
+                        list.appendChild(item);
+                    }
+                });
+                if (list.innerHTML === "") {
+                    list.innerHTML = "<small>Заявок на донат нет</small>";
+                }
+            });
+        }
+
+        window.resolveDonation = async function(targetUserId, statusResult) {
+            await updateDoc(doc(db, "donations", targetUserId), {
+                status: statusResult
+            });
         };
 
         // Отправка поста
         window.sendPost = async function() {
-            // Проверка на бан
             const banCheck = await getDoc(doc(db, "banned", userId));
             if (banCheck.exists()) {
                 alert("Вы забанены и не можете публиковать посты!");
@@ -125,7 +214,7 @@
             }
         };
 
-        // Бан пользователя (Только для Админа)
+        // Бан пользователя
         window.banUser = async function(targetUserId) {
             if (!isAdmin) return;
             if (confirm("Забанить этого пользователя?")) {
@@ -134,7 +223,7 @@
             }
         };
 
-        // Отображение постов в реальном времени
+        // Отрисовка постов
         const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
         onSnapshot(q, (snapshot) => {
             const postsContainer = document.getElementById('posts');
@@ -155,8 +244,8 @@
                             ${post.authorName} ${isMyPost ? '(Вы)' : ''}
                         </span>
                         <div>
-                            ${canDelete ? `<button class="delete-btn" onclick="deletePost('${postId}', '${post.authorId}')">Удалить</button>` : ''}
-                            ${isAdmin && !isMyPost ? `<button class="ban-btn" onclick="banUser('${post.authorId}')"> Забанить</button>` : ''}
+                            ${canDelete ? `<button class="delete-btn" onclick="deletePost('${postId}', '${post.authorId}')">🗑️ Удалить</button>` : ''}
+                            ${isAdmin && !isMyPost ? `<button class="ban-btn" onclick="banUser('${post.authorId}')">🚫 Забанить</button>` : ''}
                         </div>
                     </div>
                     <div>${post.text}</div>
@@ -165,6 +254,8 @@
                 postsContainer.appendChild(postEl);
             });
         });
+
+        listenToMyDonationStatus();
     </script>
 </head>
 <body>
@@ -172,13 +263,18 @@
 <div class="container">
     <header>
         <h1>Anom</h1>
-        <button class="pizza-btn" onclick="supportDev()">Поддержать 🍕</button>
+        <button class="pizza-btn" onclick="openDonateModal()">Поддержать 🍕</button>
     </header>
 
     <!-- Панель входа для админа -->
     <div class="admin-panel">
         <input type="password" id="admin-pass" class="admin-input" placeholder="Пароль админа">
         <button onclick="checkAdmin()">Войти как Admin</button>
+        
+        <div id="admin-donations-panel" style="display: none; margin-top: 15px; border-top: 1px solid #38444d; padding-top: 10px;">
+            <h4>Проверка донатов:</h4>
+            <div id="donations-list" class="donations-list"></div>
+        </div>
     </div>
 
     <!-- Форма создания поста -->
@@ -186,7 +282,7 @@
         <textarea id="post-text" placeholder="Что нового? (Без регистрации)"></textarea>
         <div class="post-actions">
             <label class="file-label">
-                Фото <input type="file" id="post-file" accept="image/*">
+                📷 <input type="file" id="post-file" accept="image/*">
             </label>
             <button class="send-btn" onclick="sendPost()">Опубликовать</button>
         </div>
@@ -194,6 +290,21 @@
 
     <!-- Лента постов -->
     <div class="posts" id="posts"></div>
+</div>
+
+<!-- Модальное окно доната -->
+<div class="modal" id="donateModal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeDonateModal()">&times;</span>
+        <h3>Поддержать разработчика 🍕</h3>
+        <p style="font-size: 14px; color: #8899a6; margin-top: 10px;">Отправьте сумму на кошелек ниже:</p>
+        
+        <div class="wallet-box">0xec474397b318e2f55aeda99f876ab8199786b71a</div>
+        
+        <button class="send-btn" onclick="confirmPayment()" style="width: 100%;">Я отправил донат</button>
+        
+        <div id="payment-status" class="status-box"></div>
+    </div>
 </div>
 
 </body>
