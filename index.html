@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anom — Анонимная сеть</title>
+    <title>Anom.</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
         body { background-color: #15202b; color: #fff; display: flex; justify-content: center; padding: 20px; }
@@ -104,7 +104,7 @@
             const statusBox = document.getElementById('payment-status');
             statusBox.style.display = 'block';
             statusBox.className = 'status-box status-pending';
-            statusBox.innerText = '🤖 Бот-админ проверяет ваш донат...';
+            statusBox.innerText = 'Бот-админ проверяет ваш донат...';
 
             await setDoc(doc(db, "donations", userId), {
                 userId: userId,
@@ -125,13 +125,13 @@
 
                     if (data.status === 'pending') {
                         statusBox.className = 'status-box status-pending';
-                        statusBox.innerText = '🤖 Бот-админ проверяет ваш донат...';
+                        statusBox.innerText = 'Бот-админ проверяет ваш донат...';
                     } else if (data.status === 'approved') {
                         statusBox.className = 'status-box status-success';
-                        statusBox.innerText = '✅ Оплата прошла успешно! Спасибо за поддержку! 🍕';
+                        statusBox.innerText = 'Оплата прошла успешно! Спасибо за поддержку! 🍕';
                     } else if (data.status === 'rejected') {
                         statusBox.className = 'status-box status-rejected';
-                        statusBox.innerText = '❌ Оплата не прошла. Повторите попытку.';
+                        statusBox.innerText = 'Оплата не прошла. Повторите попытку.';
                     }
                 }
             });
@@ -244,8 +244,8 @@
                             ${post.authorName} ${isMyPost ? '(Вы)' : ''}
                         </span>
                         <div>
-                            ${canDelete ? `<button class="delete-btn" onclick="deletePost('${postId}', '${post.authorId}')">🗑️ Удалить</button>` : ''}
-                            ${isAdmin && !isMyPost ? `<button class="ban-btn" onclick="banUser('${post.authorId}')">🚫 Забанить</button>` : ''}
+                            ${canDelete ? `<button class="delete-btn" onclick="deletePost('${postId}', '${post.authorId}')">Удалить</button>` : ''}
+                            ${isAdmin && !isMyPost ? `<button class="ban-btn" onclick="banUser('${post.authorId}')">Забанить</button>` : ''}
                         </div>
                     </div>
                     <div>${post.text}</div>
@@ -262,7 +262,7 @@
 
 <div class="container">
     <header>
-        <h1>Anom</h1>
+        <h1>Anom.</h1>
         <button class="pizza-btn" onclick="openDonateModal()">Поддержать 🍕</button>
     </header>
 
